@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+test/yolo_test.bundle.js
+test/yolo_test.bundle.js.map
+
+# Model weights (large files - use Git LFS or re-download)
+models/*.onnx
+models/*.pt
+
+# Test assets (large images)
+test/assets/*.png
+test/assets/*.jpg
+test/assets/*.jpeg
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+coverage/

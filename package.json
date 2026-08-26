@@ -1,0 +1,26 @@
+{
+  "name": "sih2026-yolo-face",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "YOLOv8n-face detection for SIH2026 privacy agent",
+  "scripts": {
+    "install:deps": "npm install",
+    "test:node": "node test/yolo_test_node.mjs",
+    "test:node:watch": "node --watch test/yolo_test_node.mjs",
+    "verify:channels": "node test/verify_channel_order.mjs",
+    "build:test": "esbuild test/yolo_test_entry.mjs --bundle --outfile=test/yolo_test.bundle.js --platform=browser --format=esm --external:chrome",
+    "build:test:watch": "esbuild test/yolo_test_entry.mjs --bundle --outfile=test/yolo_test.bundle.js --platform=browser --format=esm --external:chrome --watch",
+    "prepare": "npm run build:test"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.8",
+    "onnxruntime-node": "^1.18.0",
+    "onnxruntime-web": "^1.18.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -1,89 +1,135 @@
 /**
- * Quick CLI smoke-test for yolov8n-face ONNX.
- * Run:  node --experimental-vm-modules test/yolo_test_node.mjs
- *   or: npm exec -- node test/yolo_test_node.mjs
+ * Quick CLI smoke-test for yolov8n-face ONNX (with built-in NMS).
+ * Usage: node test/yolo_test_node.mjs [image-path]
+ * Default image: test/assets/im.png
  */
 
-import { readFileSync } from "fs";
-import { createCanvas, loadImage } from "canvas";   // npm i canvas  (optional)
-import ort from "onnxruntime-node";
+import { createCanvas, loadImage } from '@napi-rs/canvas';
+import ort from 'onnxruntime-node';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-const MODEL = "models/yolov8n-face.onnx";
-const INPUT = process.argv[2] || "models/yolov8n-face.onnx"; // placeholder
-const SIZE  = 1280;
-const CONF  = 0.25;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const PROJECT_ROOT = join(__dirname, '..');
+
+const MODEL_PATH = join(PROJECT_ROOT, 'models', 'yolov8n-face.onnx');
+const DEFAULT_IMAGE = join(PROJECT_ROOT, 'test', 'assets', 'im.png');
+const IMAGE_PATH = process.argv[2] || DEFAULT_IMAGE;
+const INPUT_SIZE = 1280;
+const CONF_THRESH = 0.25;
 
 async function main() {
-  console.log("Loading model…");
-  const sess = await ort.InferenceSession.create(MODEL, {
-    executionProviders: ["cpu"],
+  console.log(`Loading model: ${MODEL_PATH}`);
+  const session = await ort.InferenceSession.create(MODEL_PATH, {
+    executionProviders: ['cpu'],
   });
-  console.log("Model loaded ✓");
+  console.log('Model loaded ✓');
 
-  // create a tiny synthetic image (640×480 grey)
-  const canvas = createCanvas(640, 480);
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#808080";
-  ctx.fillRect(0, 0, 640, 480);
+  console.log(`Loading image: ${IMAGE_PATH}`);
+  const img = await loadImage(IMAGE_PATH);
+  const canvas = createCanvas(img.width, img.height);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  console.log(`Image size: ${img.width}x${img.height}`);
 
-  const { tensor, origW, origH } = prepareInput(ctx, 640, 480);
+  const { tensor, origW, origH, scale, padX, padY } = prepareInput(canvas);
+
   const t0 = performance.now();
-  const output = await sess.run({ images: tensor });
+  const output = await session.run({ images: tensor });
   const ms = performance.now() - t0;
   console.log(`Inference: ${ms.toFixed(1)} ms`);
 
-  const raw = output.output0.data;
-  const faces = postprocess(raw, origW, origH);
+  const faces = postprocess(output.output0, origW, origH, scale, padX, padY);
   console.log(`Faces detected: ${faces.length}`);
-  for (const f of faces)
-    console.log(`  bbox=[${f.bbox}]  conf=${f.confidence.toFixed(3)}`);
+  for (const f of faces) {
+    console.log(`  bbox=[${f.bbox.join(',')}]  conf=${f.confidence.toFixed(4)}`);
+  }
+
+  const smallFaces = faces.filter(f => f.bbox[2] < 60 && f.bbox[3] < 60);
+  if (smallFaces.length > 0) {
+    console.log(`✓ Small avatar detected: ${smallFaces.length} face(s) < 60px`);
+  } else {
+    console.log(`✗ Small avatar MISSED`);
+  }
 }
 
-function prepareInput(ctx, w, h) {
-  const scale = Math.min(SIZE / w, SIZE / h);
-  const nw = Math.round(w * scale), nh = Math.round(h * scale);
-  const px = (SIZE - nw) / 2, py = (SIZE - nh) / 2;
+function prepareInput(canvas) {
+  const origW = canvas.width;
+  const origH = canvas.height;
 
-  const tmp = createCanvas(SIZE, SIZE);
-  const tctx = tmp.getContext("2d");
-  tctx.fillStyle = "114";
-  tctx.fillRect(0, 0, SIZE, SIZE);
-  tctx.drawImage(ctx.canvas, px, py, nw, nh);
+  const scale = Math.min(INPUT_SIZE / origW, INPUT_SIZE / origH);
+  const newW = Math.round(origW * scale);
+  const newH = Math.round(origH * scale);
+  const padX = (INPUT_SIZE - newW) / 2;
+  const padY = (INPUT_SIZE - newH) / 2;
 
-  const img = tctx.getImageData(0, 0, SIZE, SIZE).data;
-  const chw = new Float32Array(3 * SIZE * SIZE);
-  const area = SIZE * SIZE;
+  const tmp = createCanvas(INPUT_SIZE, INPUT_SIZE);
+  const tctx = tmp.getContext('2d');
+  tctx.fillStyle = 'rgb(114, 114, 114)';
+  tctx.fillRect(0, 0, INPUT_SIZE, INPUT_SIZE);
+  tctx.drawImage(canvas, padX, padY, newW, newH);
+
+  const imgData = tctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
+  const pixels = imgData.data;
+  const chw = new Float32Array(3 * INPUT_SIZE * INPUT_SIZE);
+  const area = INPUT_SIZE * INPUT_SIZE;
+
+  // RGB order (verified)
   for (let i = 0; i < area; i++) {
     const j = i * 4;
-    chw[i]            = img[j + 2] / 255;
-    chw[i + area]     = img[j + 1] / 255;
-    chw[i + 2 * area] = img[j]     / 255;
+    chw[i] = pixels[j] / 255;
+    chw[i + area] = pixels[j + 1] / 255;
+    chw[i + 2 * area] = pixels[j + 2] / 255;
   }
+
   return {
-    tensor: new ort.Tensor("float32", chw, [1, 3, SIZE, SIZE]),
-    origW: w,
-    origH: h,
+    tensor: new ort.Tensor('float32', chw, [1, 3, INPUT_SIZE, INPUT_SIZE]),
+    origW, origH, scale, padX, padY
   };
 }
 
-function postprocess(raw, origW, origH) {
-  const C = 20, N = 8400;
-  const scale = Math.min(SIZE / origW, SIZE / origH);
-  const nw = Math.round(origW * scale), nh = Math.round(origH * scale);
-  const px = (SIZE - nw) / 2, py = (SIZE - nh) / 2;
-  const cands = [];
-  for (let i = 0; i < N; i++) {
-    const cx = raw[i*C], cy = raw[i*C+1], w = raw[i*C+2], h = raw[i*C+3];
-    const conf = sigmoid(raw[i*C+4]) * sigmoid(raw[i*C+5]);
-    if (conf < CONF) continue;
-    const x1 = Math.max(0, (cx-w/2-px)/scale);
-    const y1 = Math.max(0, (cy-h/2-py)/scale);
-    const x2 = Math.min(origW, (cx+w/2-px)/scale);
-    const y2 = Math.min(origH, (cy+h/2-py)/scale);
-    cands.push({ bbox: [+x1.toFixed(1), +y1.toFixed(1), +(x2-x1).toFixed(1), +(y2-y1).toFixed(1)], confidence: conf });
-  }
-  return cands;
-}
-function sigmoid(v) { return 1 / (1 + Math.exp(-v)); }
+function postprocess(outputTensor, origW, origH, scale, padX, padY) {
+  const raw = outputTensor.data;  // Float32Array [1, 300, 21] -> 6300 elements
+  const faces = [];
 
-main().catch(e => { console.error(e); process.exit(1); });
+  for (let i = 0; i < 300; i++) {
+    const base = i * 21;
+    const x1_in = raw[base + 0];
+    const y1_in = raw[base + 1];
+    const x2_in = raw[base + 2];
+    const y2_in = raw[base + 3];
+    const conf = raw[base + 4];
+    const cls = raw[base + 5];
+
+    if (conf < CONF_THRESH) continue;
+
+    const x1 = (x1_in - padX) / scale;
+    const y1 = (y1_in - padY) / scale;
+    const x2 = (x2_in - padX) / scale;
+    const y2 = (y2_in - padY) / scale;
+
+    const w = x2 - x1;
+    const h = y2 - y1;
+
+    if (w <= 0 || h <= 0) continue;
+    if (x1 > origW || y1 > origH) continue;
+    if (x2 < 0 || y2 < 0) continue;
+
+    faces.push({
+      bbox: [
+        Math.max(0, Math.round(x1)),
+        Math.max(0, Math.round(y1)),
+        Math.min(origW, Math.round(x2)) - Math.max(0, Math.round(x1)),
+        Math.min(origH, Math.round(y2)) - Math.max(0, Math.round(y1)),
+      ],
+      confidence: conf,
+    });
+  }
+  return faces;
+}
+
+main().catch(e => {
+  console.error('ERROR:', e.message);
+  process.exit(1);
+});
