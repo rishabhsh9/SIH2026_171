@@ -5,8 +5,6 @@
 
 import { loadModel, detectFaces } from '../src/yolo.js';
 
-const MODEL_PATH = 'yolov8n-face.onnx'; // relative to test/ after bundling
-
 const logEl = document.getElementById('log');
 function log(msg) { logEl.textContent += msg + '\n'; }
 
@@ -25,7 +23,7 @@ async function runTest() {
   canvas.getContext('2d').drawImage(img, 0, 0);
 
   try {
-    await loadModel(MODEL_PATH);
+    await loadModel();
     const faces = await detectFaces(canvas);
 
     log(`\nDetected ${faces.length} face(s):`);

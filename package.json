@@ -8,8 +8,8 @@
     "test:node": "node test/yolo_test_node.mjs",
     "test:node:watch": "node --watch test/yolo_test_node.mjs",
     "verify:channels": "node test/verify_channel_order.mjs",
-    "build:test": "esbuild test/yolo_test_entry.mjs --bundle --outfile=test/yolo_test.bundle.js --platform=browser --format=esm --external:chrome",
-    "build:test:watch": "esbuild test/yolo_test_entry.mjs --bundle --outfile=test/yolo_test.bundle.js --platform=browser --format=esm --external:chrome --watch",
+    "build:test": "esbuild test/yolo_test_entry.mjs --bundle --outfile=test/yolo_test.bundle.js --platform=browser --format=esm --target=es2020 --external:chrome --sourcemap \"--define:process.env.NODE_ENV=\\\"production\\\"\" && node -e \"require('fs').copyFileSync('node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm','test/ort-wasm-simd-threaded.wasm')\"",
+    "build:test:watch": "esbuild test/yolo_test_entry.mjs --bundle --outfile=test/yolo_test.bundle.js --platform=browser --format=esm --target=es2020 --external:chrome --sourcemap \"--define:process.env.NODE_ENV=\\\"production\\\"\" --watch",
     "prepare": "npm run build:test"
   },
   "dependencies": {

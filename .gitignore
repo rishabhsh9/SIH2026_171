@@ -5,6 +5,7 @@ node_modules/
 dist/
 test/yolo_test.bundle.js
 test/yolo_test.bundle.js.map
+test/ort-wasm-simd-threaded.wasm
 
 # Model weights (large files - use Git LFS or re-download)
 models/*.onnx

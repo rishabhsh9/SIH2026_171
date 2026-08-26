@@ -10,18 +10,21 @@
  *   // → [{ bbox: [x, y, w, h], confidence: number }, …]
  */
 
-import * as ort from "onnxruntime-web";
+import * as ort from "onnxruntime-web/wasm";
 
 /* ── tunables ─────────────────────────────────────────────── */
 const INPUT_SIZE = 1280;          // higher than 640 default → better small-face recall
 const CONF_THRESH = 0.25;         // lower than 0.5 default → catch borderline faces
-const MODEL_PATH =
-  typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.getURL
-    ? chrome.runtime.getURL("models/yolov8n-face.onnx")
-    : "models/yolov8n-face.onnx";
+const isExtension =
+  typeof chrome !== "undefined" && chrome !== null &&
+  chrome.runtime != null && typeof chrome.runtime.getURL === "function";
+
+const MODEL_PATH = isExtension
+  ? chrome.runtime.getURL("models/yolov8n-face.onnx")
+  : new URL("../models/yolov8n-face.onnx", import.meta.url).href;
 
 /* ── globals ──────────────────────────────────────────────── */
-let _session = null;
+let _sessionPromise = null;
 
 /* ── public API ───────────────────────────────────────────── */
 
@@ -30,14 +33,20 @@ let _session = null;
  * Safe to call many times — the model loads exactly once.
  */
 export async function loadModel(modelPath) {
-  if (_session) return _session;
-  const t0 = performance.now();
-  _session = await ort.InferenceSession.create(
-    modelPath || MODEL_PATH,
-    { executionProviders: ["wasm"], graphOptimizationLevel: "all" }
-  );
-  console.log(`[yolo] model loaded in ${(performance.now() - t0).toFixed(1)} ms`);
-  return _session;
+  if (_sessionPromise) return _sessionPromise;
+  _sessionPromise = (async () => {
+    const t0 = performance.now();
+    const session = await ort.InferenceSession.create(
+      modelPath || MODEL_PATH,
+      { executionProviders: ["wasm"], graphOptimizationLevel: "all" }
+    );
+    console.log(`[yolo] model loaded in ${(performance.now() - t0).toFixed(1)} ms`);
+    return session;
+  })().catch(err => {
+    _sessionPromise = null;
+    throw err;
+  });
+  return _sessionPromise;
 }
 
 /**
@@ -49,7 +58,7 @@ export async function loadModel(modelPath) {
  *          Each bbox is [x, y, width, height] in the source's pixel coordinate space.
  */
 export async function detectFaces(source, session) {
-  const sess = session || _session;
+  const sess = session || await _sessionPromise;
   if (!sess) throw new Error("Model not loaded — call loadModel() first");
 
   /* ── prepare image ──────────────────────────────────────── */
