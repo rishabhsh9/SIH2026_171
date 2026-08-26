@@ -8,6 +8,7 @@
     "test:node": "node test/yolo_test_node.mjs",
     "test:node:watch": "node --watch test/yolo_test_node.mjs",
     "verify:channels": "node test/verify_channel_order.mjs",
+    "test:ocr": "node scripts/test_ocr.js",
     "build:test": "esbuild test/yolo_test_entry.mjs --bundle --outfile=test/yolo_test.bundle.js --platform=browser --format=esm --target=es2020 --external:chrome --sourcemap \"--define:process.env.NODE_ENV=\\\"production\\\"\" && node -e \"require('fs').copyFileSync('node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm','test/ort-wasm-simd-threaded.wasm')\"",
     "build:test:watch": "esbuild test/yolo_test_entry.mjs --bundle --outfile=test/yolo_test.bundle.js --platform=browser --format=esm --target=es2020 --external:chrome --sourcemap \"--define:process.env.NODE_ENV=\\\"production\\\"\" --watch",
     "prepare": "npm run build:test"
@@ -15,7 +16,8 @@
   "dependencies": {
     "@napi-rs/canvas": "^1.0.8",
     "onnxruntime-node": "^1.18.0",
-    "onnxruntime-web": "^1.18.0"
+    "onnxruntime-web": "^1.18.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "esbuild": "^0.23.0"

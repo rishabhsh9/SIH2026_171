@@ -11,6 +11,7 @@
  */
 
 import * as ort from "onnxruntime-web/wasm";
+import { } from "./detection-schema.js";
 
 /* ── tunables ─────────────────────────────────────────────── */
 const INPUT_SIZE = 1280;          // higher than 640 default → better small-face recall
@@ -54,7 +55,7 @@ export async function loadModel(modelPath) {
  *
  * @param {HTMLCanvasElement|HTMLImageElement|ImageData} source
  * @param {ort.InferenceSession} [session]  Optional pre-loaded session.
- * @returns {Promise<Array<{bbox:[number,number,number,number], confidence:number}>>}
+ * @returns {Promise<Array<import("./detection-schema.js").Detection>>}
  *          Each bbox is [x, y, width, height] in the source's pixel coordinate space.
  */
 export async function detectFaces(source, session) {
@@ -175,6 +176,7 @@ function postprocess(outputTensor, origW, origH, scale, padX, padY) {
     if (x2 < 0 || y2 < 0) continue;
 
     faces.push({
+      type:       "face",
       bbox: [
         Math.max(0, Math.round(x1)),
         Math.max(0, Math.round(y1)),
@@ -182,6 +184,7 @@ function postprocess(outputTensor, origW, origH, scale, padX, padY) {
         Math.min(origH, Math.round(y2)) - Math.max(0, Math.round(y1)),
       ],
       confidence: conf,
+      source:     "yolo",
     });
   }
 

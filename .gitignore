@@ -11,10 +11,16 @@ test/ort-wasm-simd-threaded.wasm
 models/*.onnx
 models/*.pt
 
+# Tesseract trained data (large file, auto-downloaded)
+eng.traineddata
+
 # Test assets (large images)
 test/assets/*.png
 test/assets/*.jpg
 test/assets/*.jpeg
+
+# Test output artifacts
+data/results/
 
 # IDE / OS
 .vscode/
