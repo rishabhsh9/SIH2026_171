@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test PII Page - Sensitive Data Redactor</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+    .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    input { width: 100%; padding: 8px; margin: 6px 0 16px; border: 1px solid #ccc; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Test Page with Sensitive PII Information</h1>
+  <p>This page contains various types of sensitive data to test the PII Redactor Chrome Extension.</p>
+
+  <div class="card">
+    <h2>User Profile Details</h2>
+    <p>Contact Email: <strong>john.doe@example.com</strong></p>
+    <p>Phone Number: <strong>+1 (555) 234-5678</strong></p>
+    <p>Social Security Number (SSN): <strong>123-45-6789</strong></p>
+    <p>Aadhaar / National ID: <strong>9876 5432 1098</strong></p>
+  </div>
+
+  <div class="card">
+    <h2>Payment & API Credentials</h2>
+    <p>Credit Card: <strong>4532-0151-1283-0366</strong> (Valid Luhn Algorithm)</p>
+    <p>OpenAI API Key: <code>sk-proj-78ab90cd12ef34gh56ij78kl90mn12op34qr56st78uv90</code></p>
+    <p>AWS Access Key ID: <code>AKIAIOSFODNN7EXAMPLE</code></p>
+  </div>
+
+  <div class="card">
+    <h2>Input Form</h2>
+    <form>
+      <label>Username</label>
+      <input type="text" value="johndoe99">
+      
+      <label>Password</label>
+      <input type="password" value="SuperSecretP@ssw0rd!">
+
+      <label>Credit Card CVC/CVV</label>
+      <input type="text" id="cvv" placeholder="Enter CVV" value="882">
+    </form>
+  </div>
+</body>
+</html>

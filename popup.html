@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PII Redactor for AI</title>
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="shield-icon">🛡️</div>
+        <div>
+          <h1>AI Screen Redactor</h1>
+          <span class="status-badge" id="statusBadge">Idle</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Step 1: Scan & Redact Page -->
+    <div class="controls-card">
+      <div class="setting-row">
+        <label for="autoToggle">Auto-Redact on Load</label>
+        <label class="switch">
+          <input type="checkbox" id="autoToggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <div class="button-group">
+        <button id="scanBtn" class="btn btn-primary">
+          <span class="icon">🔍</span> 1. Redact Page ([EMAIL], etc.)
+        </button>
+        <button id="restoreBtn" class="btn btn-secondary">
+          <span class="icon">↺</span> Restore
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Detection Summary -->
+    <section class="dashboard-section">
+      <h2>Detected & Placeholder Mapped</h2>
+      <div class="stats-grid">
+        <div class="stat-box primary">
+          <span class="stat-number" id="totalCount">0</span>
+          <span class="stat-label">Total Redacted</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-number" id="emailCount">0</span>
+          <span class="stat-label">[EMAIL]</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-number" id="cardCount">0</span>
+          <span class="stat-label">[CARD / ID]</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-number" id="tokenCount">0</span>
+          <span class="stat-label">[KEYS / PASS]</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3: AI Prompt & Vision Export -->
+    <section class="ai-section">
+      <h2>2. Export for AI Model (LLM / Vision)</h2>
+      
+      <div class="input-group">
+        <label for="userQuestion">Ask your AI Assistant:</label>
+        <textarea id="userQuestion" placeholder="e.g. Summarize this page content or help me analyze the data..."></textarea>
+      </div>
+
+      <div class="export-buttons">
+        <button id="copyAiPromptBtn" class="btn btn-ai">
+          <span class="icon">🤖</span> Copy Sanitized AI Prompt
+        </button>
+        <button id="captureVisionBtn" class="btn btn-vision">
+          <span class="icon">📸</span> Capture Vision Screen
+        </button>
+      </div>
+    </section>
+
+    <!-- Vision Screenshot Preview Modal/Box -->
+    <div id="visionPreviewBox" class="vision-box hidden">
+      <div class="vision-header">
+        <span>Redacted Screen Vision Preview</span>
+        <button id="downloadVisionBtn" class="btn-sm">Save Image</button>
+      </div>
+      <img id="visionImg" alt="Redacted Vision Screen">
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">Copied to clipboard!</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

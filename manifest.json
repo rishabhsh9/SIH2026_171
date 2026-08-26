@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "PII Shield & Sensitive Data Redactor",
+  "version": "1.0.0",
+  "description": "Reads screen/DOM, detects sensitive fields and PII (emails, cards, API keys, passwords), redacts them visually, and provides sanitized text for next processes.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["piiDetector.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  }
+}
