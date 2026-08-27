@@ -1,0 +1,28 @@
+{
+  "name": "vision-agent-server-node",
+  "version": "1.0.0",
+  "description": "Privacy-Preserving Vision Agent Server in Node.js using Express and Google Gemini (@google/genai)",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node testClient.js"
+  },
+  "keywords": [
+    "vision-agent",
+    "gemini",
+    "privacy",
+    "vlm",
+    "node"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "latest",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "zod": "^3.24.2"
+  }
+}
