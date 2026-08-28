@@ -6,7 +6,11 @@
     "permissions": [
         "activeTab",
         "scripting",
-        "storage"
+        "storage",
+        "offscreen"
+    ],
+    "host_permissions": [
+        "http://localhost:3000/*"
     ],
     "background": {
         "service_worker": "background.js"
@@ -14,12 +18,28 @@
     "action": {
         "default_popup": "popup.html"
     },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "node_modules/tesseract.js/dist/worker.min.js",
+                "node_modules/tesseract.js-core/*",
+                "tessdata/*",
+                "models/*",
+                "node_modules/onnxruntime-web/dist/*"
+            ],
+            "matches": ["<all_urls>"]
+        }
+    ],
     "content_scripts": [
         {
             "matches": [
                 "<all_urls>"
             ],
             "js": [
+                "ocr.js",
                 "content.js"
             ]
         }
