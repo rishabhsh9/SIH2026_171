@@ -1,8 +1,50 @@
 // Pending OCR callbacks: jobId -> { resolve, reject }
 const pendingOCR = {};
 
+// Handle LLM analysis request from content script or popup
+async function handleAnalyze(image, dom) {
+    try {
+        console.log("[BG] Forwarding image + DOM to server http://localhost:3000/api/analyze");
+        const response = await fetch("http://localhost:3000/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image, dom })
+        });
+
+        const data = await response.json();
+        console.log("[BG] Server response:", data);
+
+        if (data.success && data.action) {
+            await chrome.storage.local.set({
+                lastAction: data.action,
+                lastActionTime: Date.now(),
+                scanStatus: "ready",
+                sanitizedImage: image,
+                scanError: null
+            });
+            return { success: true, action: data.action };
+        } else {
+            const errorMsg = data.error || "Server returned an error";
+            await chrome.storage.local.set({
+                scanStatus: "error",
+                scanError: errorMsg
+            });
+            return { success: false, error: errorMsg };
+        }
+    } catch (err) {
+        console.error("[BG] Server fetch error:", err);
+        const errorMsg = "Could not reach server (http://localhost:3000). Please ensure server is running.";
+        await chrome.storage.local.set({
+            scanStatus: "error",
+            scanError: errorMsg
+        });
+        return { success: false, error: errorMsg };
+    }
+}
+
 chrome.runtime.onMessage.addListener(
     (message, sender, sendResponse) => {
+        // Screenshot capture
         if (message.type === "CAPTURE_SCREENSHOT") {
             chrome.tabs.captureVisibleTab(
                 null,
@@ -37,6 +79,14 @@ chrome.runtime.onMessage.addListener(
                     console.error("[BG] OCR error:", err);
                     sendResponse({ success: false, error: String(err) });
                 });
+            return true;
+        }
+
+        // Analysis request from content script (avoids Mixed Content / CORS restrictions)
+        if (message.type === "ANALYZE_IMAGE") {
+            handleAnalyze(message.image, message.dom)
+                .then((result) => sendResponse(result))
+                .catch((err) => sendResponse({ success: false, error: err.message }));
             return true;
         }
 

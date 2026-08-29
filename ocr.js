@@ -49,13 +49,3 @@ function redactAllOnCanvas(imageDataUrl, entities) {
         img.src = imageDataUrl;
     });
 }
-
-// Download a data URL as an image file
-function downloadFile(dataUrl, filename) {
-    const link = document.createElement("a");
-    link.href = dataUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-}

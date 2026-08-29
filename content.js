@@ -71,8 +71,8 @@ function getSensitiveDOMFields() {
     const images = document.querySelectorAll("img.avatar, img.profile-photo, img.user-avatar, img.profile-pic, img[src*='profile'], img[src*='avatar']");
     images.forEach((img) => {
         const rect = img.getBoundingClientRect();
-        // Reasonable avatar size (between 24px and 300px)
-        if (rect.width >= 24 && rect.width <= 300 && rect.height >= 24 && rect.height <= 300) {
+        // Allow avatars and profile photos from 20px up to 1600px
+        if (rect.width >= 20 && rect.height >= 20 && rect.width <= 1600 && rect.height <= 1600) {
             fields.push({
                 type: "FACE",
                 text: "AVATAR",
@@ -146,48 +146,58 @@ async function runFastPrivacyScan() {
     const ocrEntities = (ocrResult && ocrResult.success) ? (ocrResult.entities || []) : [];
     console.log(`[Privacy Agent] AI models found ${ocrEntities.length} item(s).`);
 
-    // Merge entities avoiding overlapping boxes
+    // Merge entities avoiding duplicate/overlapping boxes (using overlap area)
     const allEntities = [...ocrEntities];
     domFields.forEach((dom) => {
-        const isOverlap = allEntities.some(
-            (e) =>
-                Math.abs(e.bbox.x0 - dom.bbox.x0) < 25 &&
-                Math.abs(e.bbox.y0 - dom.bbox.y0) < 25
-        );
+        const isOverlap = allEntities.some((e) => {
+            const xA = Math.max(e.bbox.x0, dom.bbox.x0);
+            const yA = Math.max(e.bbox.y0, dom.bbox.y0);
+            const xB = Math.min(e.bbox.x1, dom.bbox.x1);
+            const yB = Math.min(e.bbox.y1, dom.bbox.y1);
+            const interArea = Math.max(0, xB - xA) * Math.max(0, yB - yA);
+            const minArea = Math.min(e.bbox.width * e.bbox.height, dom.bbox.width * dom.bbox.height);
+            return minArea > 0 && (interArea / minArea > 0.35);
+        });
         if (!isOverlap) {
             allEntities.push(dom);
         }
     });
 
-    // 3. Single-Pass Redaction & Download
+    // 3. Single-Pass Redaction
     const redactedDataUrl = await redactAllOnCanvas(rawScreenshot, allEntities);
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filename = `privacy-scan-${timestamp}.png`;
-    downloadFile(redactedDataUrl, filename);
-
     const totalTime = ((performance.now() - startTime) / 1000).toFixed(2);
-    console.log(`[Privacy Agent] Scan complete and downloaded in ${totalTime}s (${allEntities.length} redacted items).`);
+    console.log(`[Privacy Agent] Sanitization complete in ${totalTime}s (${allEntities.length} redacted items).`);
 
-    // 4. Send redacted image + DOM snapshot to server for LLM guidance
+    // Signal popup that screenshot and sanitization are complete, waiting for LLM
+    try {
+        await chrome.storage.local.set({
+            scanStatus: "analyzing",
+            redactedCount: allEntities.length,
+            sanitizedImage: redactedDataUrl
+        });
+        chrome.runtime.sendMessage({ type: "OPEN_POPUP" });
+    } catch (e) { }
+
+    // 4. Send redacted image + DOM snapshot to background service worker for server LLM guidance
     try {
         const domSnapshot = getDOMSnapshot();
-        console.log("[Privacy Agent] Sending redacted image + DOM to server...");
-        const response = await fetch("http://localhost:3000/api/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: redactedDataUrl, dom: domSnapshot })
-        });
+        console.log("[Privacy Agent] Sending redacted image + DOM to background for LLM analysis...");
 
-        const data = await response.json();
-        if (data.success && data.action) {
-            console.log("[Privacy Agent] Action:", JSON.stringify(data.action));
-            showActionOverlay(data.action);
-        } else {
-            console.warn("[Privacy Agent] Server returned error:", data.error || "Unknown error");
-        }
-    } catch (serverErr) {
-        console.warn("[Privacy Agent] Could not reach server:", serverErr.message);
+        await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage(
+                { type: "ANALYZE_IMAGE", image: redactedDataUrl, dom: domSnapshot },
+                (res) => {
+                    if (chrome.runtime.lastError) {
+                        reject(new Error(chrome.runtime.lastError.message));
+                        return;
+                    }
+                    resolve(res);
+                }
+            );
+        });
+    } catch (err) {
+        console.error("[Privacy Agent] Analysis error:", err);
     }
 }
 
@@ -240,66 +250,6 @@ function getDOMSnapshot() {
     });
 
     return elements.join("\n");
-}
-
-// Floating overlay — shows only the action from the LLM
-function showActionOverlay(action) {
-    const existing = document.getElementById("privacy-agent-guidance");
-    if (existing) existing.remove();
-
-    if (!action || action.type === "none") return;
-
-    let text = action.type.toUpperCase();
-    if (action.target) text += `: ${action.target}`;
-    if (action.value) text += ` → "${action.value}"`;
-
-    const overlay = document.createElement("div");
-    overlay.id = "privacy-agent-guidance";
-    overlay.textContent = text;
-
-    Object.assign(overlay.style, {
-        position: "fixed",
-        bottom: "24px",
-        right: "24px",
-        maxWidth: "420px",
-        padding: "12px 18px",
-        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
-        color: "#7cb8ff",
-        fontFamily: "'Segoe UI', system-ui, sans-serif",
-        fontSize: "14px",
-        fontWeight: "600",
-        letterSpacing: "0.5px",
-        lineHeight: "1.4",
-        borderRadius: "10px",
-        border: "1px solid rgba(100, 180, 255, 0.4)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-        zIndex: "2147483647",
-        cursor: "pointer",
-        opacity: "0",
-        transform: "translateY(20px)",
-        transition: "opacity 0.3s ease, transform 0.3s ease"
-    });
-
-    document.body.appendChild(overlay);
-
-    requestAnimationFrame(() => {
-        overlay.style.opacity = "1";
-        overlay.style.transform = "translateY(0)";
-    });
-
-    overlay.addEventListener("click", () => {
-        overlay.style.opacity = "0";
-        overlay.style.transform = "translateY(20px)";
-        setTimeout(() => overlay.remove(), 300);
-    });
-
-    setTimeout(() => {
-        if (overlay.parentNode) {
-            overlay.style.opacity = "0";
-            overlay.style.transform = "translateY(20px)";
-            setTimeout(() => overlay.remove(), 300);
-        }
-    }, 15000);
 }
 
 // Listen for popup trigger

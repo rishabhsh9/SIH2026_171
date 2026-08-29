@@ -1,20 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>Privacy Agent</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOPYA - Protect What Matters</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-    <h2>Privacy Agent</h2>
+    <div class="extension-container">
 
-    <button id="scan">
-        Scan Page
-    </button>
+        <!-- HEADER -->
+        <header class="header">
+            <div class="brand" id="brand-header">
+                <img src="assets/gopya_logo_lockup_exact.png" alt="GOPYA Logo" class="brand-logo">
+                <div class="brand-info">
+                    <span class="brand-title">GOPYA</span>
+                    <span class="brand-subtitle">Protect What Matters</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="status-badge" id="global-status-badge">
+                    <span class="status-dot"></span>
+                    <span id="global-status-text">IDLE</span>
+                </div>
+            </div>
+        </header>
 
-    <button id="remove">
-        Remove Overlays
-    </button>
+        <!-- VIEWS -->
+        <div class="views-container">
+
+            <!-- VIEW: HOME -->
+            <main class="view active" id="view-home">
+                <h2 class="title">Your privacy layer<br>for the web.</h2>
+                <p class="subtitle">Detect sensitive content locally. Keep only the context your agent needs.</p>
+
+                <button class="btn-primary" id="btn-scan">
+                    <span class="spinner" id="scan-spinner"></span>
+                    <span id="scan-btn-text">▶ SCAN PAGE</span>
+                </button>
+
+                <div class="info-card">
+                    <div class="info-header">
+                        <div class="info-header-left">
+                            <span class="status-dot"></span> LOCAL ENGINE &nbsp;&middot;&nbsp; READY
+                        </div>
+                        <span style="color: var(--text-secondary);" id="scans-count-text">0 scans today</span>
+                    </div>
+                    <div class="info-body">DOM &middot; Tesseract &middot; YOLOv8n</div>
+                </div>
+            </main>
+
+            <!-- VIEW: AGENT ACTIVITY -->
+            <main class="view" id="view-agent">
+                <button class="back-btn" id="btn-back-to-scan">❮ BACK TO SCAN</button>
+                <div class="section-label">AGENT ACTIVITY</div>
+                <div class="agent-status-indicator" id="agent-status-indicator">
+                    <span class="status-dot"></span>
+                    <span id="agent-status-text">SANITIZED CONTEXT ACTIVE</span>
+                </div>
+
+                <div class="agent-card">
+                    <div class="action-step" id="step-context">
+                        <span class="action-arrow done" id="step-icon-context">✓</span>
+                        <span id="step-text-context">Sanitized context received</span>
+                    </div>
+                    <div class="action-step" id="step-interpreting">
+                        <span class="action-arrow" id="step-icon-interpreting">❯</span>
+                        <span id="step-text-interpreting">Interpreting page state & DOM...</span>
+                    </div>
+                    <div class="action-step pending" id="step-decision">
+                        <span class="action-arrow" id="step-icon-decision">❯</span>
+                        <span id="step-text-decision">Synthesizing next action...</span>
+                    </div>
+
+                    <div class="code-snippet" id="code-snippet-box">
+                        <span
+                            style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px; color: var(--accent-gold-dark);">NEXT
+                            ACTION</span>
+                        <span id="agent-action-code" style="color: var(--accent-gold-dark);">{type: "none", target:
+                            null, value: null}</span>
+                    </div>
+                </div>
+
+                <button class="btn-secondary" id="btn-download-sanitized"
+                    style="width: 100%; display: none; align-items: center; justify-content: center; gap: 8px; margin-top: -4px;">
+                    <span>⬇</span> Download Sanitized Screenshot
+                </button>
+            </main>
+
+            <!-- VIEW: ABOUT -->
+            <main class="view" id="view-about">
+                <div class="section-label">SYSTEM INFO</div>
+                <h2 class="title">About GOPYA</h2>
+                <p class="subtitle">Zero-trust privacy proxy engine designed for autonomous AI web agents.</p>
+
+                <div class="info-card"
+                    style="margin-top: 0; line-height: 1.6; font-size: 12px; color: var(--text-secondary);">
+                    <p style="margin-bottom: 10px;"><strong style="color: var(--text-primary);">Version:</strong> 1.4.2
+                        (Production)</p>
+                    <p style="margin-bottom: 10px;"><strong style="color: var(--text-primary);">Engine Status:</strong>
+                        WebAssembly WASM Enabled</p>
+                    <p><strong style="color: var(--text-primary);">Privacy Guarantee:</strong> All sanitization happens
+                        100% on-device before DOM state is serialized for LLM consumption.</p>
+                </div>
+            </main>
+
+        </div>
+
+        <!-- BOTTOM NAV -->
+        <nav class="bottom-nav">
+            <a class="nav-item active" id="nav-home">
+                <span class="nav-icon">⌂</span>
+                <span>Home</span>
+            </a>
+            <a class="nav-item" id="nav-about">
+                <span class="nav-icon">ⓘ</span>
+                <span>About</span>
+            </a>
+        </nav>
+    </div>
 
     <script src="popup.js"></script>
 </body>

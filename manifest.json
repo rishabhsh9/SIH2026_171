@@ -7,6 +7,7 @@
         "activeTab",
         "scripting",
         "storage",
+        "unlimitedStorage",
         "offscreen"
     ],
     "host_permissions": [
@@ -28,9 +29,12 @@
                 "node_modules/tesseract.js-core/*",
                 "tessdata/*",
                 "models/*",
+                "assets/*",
                 "node_modules/onnxruntime-web/dist/*"
             ],
-            "matches": ["<all_urls>"]
+            "matches": [
+                "<all_urls>"
+            ]
         }
     ],
     "content_scripts": [

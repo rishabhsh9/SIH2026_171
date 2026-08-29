@@ -344,19 +344,21 @@ async function performScan(imageDataUrl, jobId) {
             }
         }
 
-        // 4. YOLO Face Detection
+        // 4. YOLO Face Detection directly on original screenshot
         try {
-            console.log("[OCR Offscreen] Running YOLOv8 Face Detection...");
-            const detectedFaces = await detectFaces(canvas);
+            console.log("[OCR Offscreen] Running YOLOv8 Face Detection on full image...");
+            const detectedFaces = await detectFaces(imageDataUrl);
             console.log(`[OCR Offscreen] Found ${detectedFaces.length} face(s).`);
 
             detectedFaces.forEach((f) => {
                 const [fx, fy, fw, fh] = f.bbox;
-                const pad = 4;
-                const x0 = Math.max(0, Math.round(fx * scaleFactor) - pad);
-                const y0 = Math.max(0, Math.round(fy * scaleFactor) - pad);
-                const width = Math.round(fw * scaleFactor) + pad * 2;
-                const height = Math.round(fh * scaleFactor) + pad * 2;
+                // Proportional padding (12% horizontally, 15% vertically) for complete face coverage
+                const padX = Math.max(8, Math.round(fw * 0.12));
+                const padY = Math.max(10, Math.round(fh * 0.15));
+                const x0 = Math.max(0, fx - padX);
+                const y0 = Math.max(0, fy - padY);
+                const width = fw + padX * 2;
+                const height = fh + padY * 2;
 
                 allEntities.push({
                     type: "FACE",
