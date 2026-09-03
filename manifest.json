@@ -1,0 +1,61 @@
+{
+    "manifest_version": 3,
+    "name": "Privacy Agent",
+    "version": "1.0.0",
+    "description": "A privacy-preserving browser AI agent",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "storage",
+        "unlimitedStorage"
+    ],
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "privacy-agent@sih2026",
+            "strict_min_version": "109.0"
+        }
+    },
+    "host_permissions": [
+        "http://localhost:3000/*",
+        "https://agastya-gules.vercel.app/*"
+    ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ],
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "offscreen.html",
+                "node_modules/tesseract.js/dist/worker.min.js",
+                "node_modules/tesseract.js-core/*",
+                "tessdata/*",
+                "models/*",
+                "assets/*",
+                "node_modules/onnxruntime-web/dist/*"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "ocr.js",
+                "content.js"
+            ]
+        }
+    ]
+}
