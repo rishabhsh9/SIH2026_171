@@ -7,7 +7,8 @@
         "activeTab",
         "scripting",
         "storage",
-        "unlimitedStorage"
+        "unlimitedStorage",
+        "offscreen"
     ],
     "browser_specific_settings": {
         "gecko": {
